@@ -71,6 +71,9 @@ def main_and_jam_detection_fulltime():
 
 			if not line_follower.line_detected(): # if there is no line, search for green using the camera
 
+				# Reset the line following total counter
+				line_follower.lf_total_counter = 0
+
 				# Capture image
 				camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
 
@@ -126,192 +129,192 @@ if __name__ == "__main__":
 
 ### Not being used at the moment
 
-def main():
-	try:
-		while True:
-			if line_follower.line_detected():
-				robot_controller.move_forward()
-				line_follower.follow_line_evacuations()
-				green_follower.green_detection_counter = 0
+# def main():
+# 	try:
+# 		while True:
+# 			if line_follower.line_detected():
+# 				robot_controller.move_forward()
+# 				line_follower.follow_line_evacuations()
+# 				green_follower.green_detection_counter = 0
 
-			if not line_follower.line_detected():
+# 			if not line_follower.line_detected():
 
-				# Capture image
-				camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
-				frame = camera_controller.stream
+# 				# Capture image
+# 				camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
+# 				frame = camera_controller.stream
 				
-				# Crop the upper portion of the frame (adjust the values to your desired crop size)
-				cropped_frame = frame.array[settings.crop_pos:, :]
+# 				# Crop the upper portion of the frame (adjust the values to your desired crop size)
+# 				cropped_frame = frame.array[settings.crop_pos:, :]
 
-				# Follow exit using the image
-				green_follower.evacuations_v4(cropped_frame)
+# 				# Follow exit using the image
+# 				green_follower.evacuations_v4(cropped_frame)
 				
-				# Clear the stream in preparation for the next frame
-				camera_controller.stream.truncate(0)
+# 				# Clear the stream in preparation for the next frame
+# 				camera_controller.stream.truncate(0)
 
-	except KeyboardInterrupt:
-		# Handle Ctrl+C gracefully
-		pass
+# 	except KeyboardInterrupt:
+# 		# Handle Ctrl+C gracefully
+# 		pass
 	
-	finally:
-		# Clean up GPIO and camera resources
-		GPIO.cleanup()
-		camera_controller.camera.close()
-		# pass
+# 	finally:
+# 		# Clean up GPIO and camera resources
+# 		GPIO.cleanup()
+# 		camera_controller.camera.close()
+# 		# pass
 
-def main_and_jam_detection():
+# def main_and_jam_detection():
 
-	try:
-		while True:
-			if line_follower.line_detected():
-				robot_controller.move_forward()
-				line_follower.follow_line_evacuations()
-				green_follower.green_detection_counter = 0
+# 	try:
+# 		while True:
+# 			if line_follower.line_detected():
+# 				robot_controller.move_forward()
+# 				line_follower.follow_line_evacuations()
+# 				green_follower.green_detection_counter = 0
 
-			if not line_follower.line_detected():
+# 			if not line_follower.line_detected():
 
-				# Capture image
-				camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
-				frame = camera_controller.stream
+# 				# Capture image
+# 				camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
+# 				frame = camera_controller.stream
 				
-				# Crop the upper portion of the frame (adjust the values to your desired crop size)
-				cropped_frame = frame.array[settings.crop_pos:, :]
+# 				# Crop the upper portion of the frame (adjust the values to your desired crop size)
+# 				cropped_frame = frame.array[settings.crop_pos:, :]
 
-				if green_follower.green_detection_counter == 0:
-					prev_frame = cropped_frame
+# 				if green_follower.green_detection_counter == 0:
+# 					prev_frame = cropped_frame
 
-					# Record start time
-					start_time = time.time()
+# 					# Record start time
+# 					start_time = time.time()
 
-					first_control = False
+# 					first_control = False
 
-				# Follow exit using the image
-				green_follower.evacuations_v4(cropped_frame)
+# 				# Follow exit using the image
+# 				green_follower.evacuations_v4(cropped_frame)
 
-				# Record end time
-				end_time = time.time()
+# 				# Record end time
+# 				end_time = time.time()
 
-				# Calculate elapsed time
-				elapsed_time = end_time - start_time
+# 				# Calculate elapsed time
+# 				elapsed_time = end_time - start_time
 					
-				if elapsed_time >= 10 and first_control == False: # in seconds
+# 				if elapsed_time >= 10 and first_control == False: # in seconds
 
-					movement_magnitude = green_follower.calculate_displacement(prev_frame, cropped_frame)
+# 					movement_magnitude = green_follower.calculate_displacement(prev_frame, cropped_frame)
 					
-					if movement_magnitude < 40000:
-						print('You are in a jam!', movement_magnitude)
-						robot_controller.line_follow_sensors_calibration()
-						pass
-					else:
-						print('You are moving!', movement_magnitude)
-						pass
+# 					if movement_magnitude < 40000:
+# 						print('You are in a jam!', movement_magnitude)
+# 						robot_controller.line_follow_sensors_calibration()
+# 						pass
+# 					else:
+# 						print('You are moving!', movement_magnitude)
+# 						pass
 
-					prev_frame = cropped_frame
+# 					prev_frame = cropped_frame
 					
-					# Record start time
-					start_time = time.time()
+# 					# Record start time
+# 					start_time = time.time()
 					
-					first_control = True
+# 					first_control = True
 
-				if elapsed_time >= 2 and first_control == True:
+# 				if elapsed_time >= 2 and first_control == True:
 
-					movement_magnitude = green_follower.calculate_displacement(prev_frame, cropped_frame)
+# 					movement_magnitude = green_follower.calculate_displacement(prev_frame, cropped_frame)
 					
-					if movement_magnitude < 40000:
-						print('You are in a jam!', movement_magnitude)
-						robot_controller.line_follow_sensors_calibration()
-						pass
-					else:
-						print('You are moving!', movement_magnitude)
-						pass
+# 					if movement_magnitude < 40000:
+# 						print('You are in a jam!', movement_magnitude)
+# 						robot_controller.line_follow_sensors_calibration()
+# 						pass
+# 					else:
+# 						print('You are moving!', movement_magnitude)
+# 						pass
 
-					prev_frame = cropped_frame
+# 					prev_frame = cropped_frame
 
-					# Record start time
-					start_time = time.time()
+# 					# Record start time
+# 					start_time = time.time()
 
-				# Clear the stream in preparation for the next frame
-				camera_controller.stream.truncate(0)
+# 				# Clear the stream in preparation for the next frame
+# 				camera_controller.stream.truncate(0)
 
-	except KeyboardInterrupt:
-		# Handle Ctrl+C gracefully
-		pass
+# 	except KeyboardInterrupt:
+# 		# Handle Ctrl+C gracefully
+# 		pass
 	
-	finally:
-		# Clean up GPIO and camera resources
-		GPIO.cleanup()
-		camera_controller.camera.close()
-		# pass
+# 	finally:
+# 		# Clean up GPIO and camera resources
+# 		GPIO.cleanup()
+# 		camera_controller.camera.close()
+# 		# pass
 
-def main_save_image():
-	# Capture image
-	camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
-	camera_controller.save_image()
+# def main_save_image():
+# 	# Capture image
+# 	camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
+# 	camera_controller.save_image()
 
-def move_if_in_jam():
-	# prev_frame = np.zeros((480,720,3))
+# def move_if_in_jam():
+# 	# prev_frame = np.zeros((480,720,3))
 
-	counter = 0
+# 	counter = 0
 
-	try:
-		while True:
+# 	try:
+# 		while True:
 
-			# # Record start time
-			# start_time = time.time()
+# 			# # Record start time
+# 			# start_time = time.time()
 
-			# Capture image
-			camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
-			frame = camera_controller.stream
+# 			# Capture image
+# 			camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
+# 			frame = camera_controller.stream
 			
-			# Crop the upper portion of the frame (adjust the values to your desired crop size)
-			cropped_frame = frame.array[settings.crop_pos:, :]
+# 			# Crop the upper portion of the frame (adjust the values to your desired crop size)
+# 			cropped_frame = frame.array[settings.crop_pos:, :]
 
-			if counter == 0:
-				prev_frame = cropped_frame
+# 			if counter == 0:
+# 				prev_frame = cropped_frame
 
-				# Clear the stream in preparation for the next frame
-				camera_controller.stream.truncate(0)
-				counter += 1
-				continue
-			else:
-				pass
+# 				# Clear the stream in preparation for the next frame
+# 				camera_controller.stream.truncate(0)
+# 				counter += 1
+# 				continue
+# 			else:
+# 				pass
 
-			if counter%1 == 0:
-				# Record start time
-				start_time = time.time()
-				movement_magnitude = green_follower.detect_movement(prev_frame, cropped_frame, 20)
-				# Record end time
-				end_time = time.time()
+# 			if counter%1 == 0:
+# 				# Record start time
+# 				start_time = time.time()
+# 				movement_magnitude = green_follower.detect_movement(prev_frame, cropped_frame, 20)
+# 				# Record end time
+# 				end_time = time.time()
 
-				prev_frame = cropped_frame
+# 				prev_frame = cropped_frame
 				
-				if np.max(movement_magnitude) < 20:
-					# print('You are in a jam!', np.max(movement_magnitude))
-					# move !!!
-					pass
-				else:
-					# print('You are moving!',np.max(movement_magnitude))
-					pass
-			counter += 1
+# 				if np.max(movement_magnitude) < 20:
+# 					# print('You are in a jam!', np.max(movement_magnitude))
+# 					# move !!!
+# 					pass
+# 				else:
+# 					# print('You are moving!',np.max(movement_magnitude))
+# 					pass
+# 			counter += 1
 				
-			# Clear the stream in preparation for the next frame
-			camera_controller.stream.truncate(0)		
+# 			# Clear the stream in preparation for the next frame
+# 			camera_controller.stream.truncate(0)		
 			
-			# # Record end time
-			# end_time = time.time()
+# 			# # Record end time
+# 			# end_time = time.time()
 
-			# Calculate elapsed time
-			elapsed_time = end_time - start_time
+# 			# Calculate elapsed time
+# 			elapsed_time = end_time - start_time
 
-			print(elapsed_time)
+# 			print(elapsed_time)
 
-	except KeyboardInterrupt:
-		# Handle Ctrl+C gracefully
-		pass
+# 	except KeyboardInterrupt:
+# 		# Handle Ctrl+C gracefully
+# 		pass
 	
-	finally:
-		# Clean up GPIO and camera resources
-		GPIO.cleanup()
-		camera_controller.camera.close()
-		# pass	
+# 	finally:
+# 		# Clean up GPIO and camera resources
+# 		GPIO.cleanup()
+# 		camera_controller.camera.close()
+# 		# pass	
 

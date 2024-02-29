@@ -343,7 +343,7 @@ class GreenObjectDetectionController:
     def evacuations_v2(self, frame):
         '''
         Follows the exit.
-        Controls to main situations when the green is not found in the current frame
+        Controls two main situations when the green is not found in the current frame
             - and has never been found -> rotates searching for it
             - and was found before -> rotates in the proper sense based on the previous green detection
         '''
@@ -361,7 +361,7 @@ class GreenObjectDetectionController:
 
         else: # no green found
             
-            if self.green_detection_counter == 0: # if green never has been found
+            if self.green_detection_counter == 0 or self.robot_controller.green_exploration_counter != 0: # if green never has been found or the green exploration is on the go
                 logging.warning('Green never detected. Doing rotation exploration')
 
                 # self.robot_controller.stop()
@@ -404,17 +404,23 @@ class GreenObjectDetectionController:
             # gf_obstacle_counter goes to zero when the bot is following the green
             self.gf_obstacle_counter = 0
 
-        else: # if obstacles, brake
-            if self.gf_obstacle_counter == 1 and self.gf_counter > 50:
+        else: # if obstacles
+            if self.pos_x == -1: # and green feature has not been found, then find it
+                logging.warning('Obstacle detected. Forgetting about it and doing rotation exploration')
+                self.robot_controller.rotation_exploration()
 
-                self.robot_controller.hard_brake(self.maxDC)
-                
-                # counts how many CONTINUOUS steps the bot is stoped (check)
-                self.gf_obstacle_counter =+ 1
-                # goes to zero because green following was interrupted
-                self.gf_counter = 0
-            else:
-                self.robot_controller.brake()
+            else: # if there is green, then stop
+
+                if self.gf_obstacle_counter == 1 and self.gf_counter > 50:
+
+                    self.robot_controller.hard_brake(self.maxDC)
+                    
+                    # counts how many CONTINUOUS steps the bot is stoped (check)
+                    self.gf_obstacle_counter =+ 1
+                    # goes to zero because green following was interrupted
+                    self.gf_counter = 0
+                else:
+                    self.robot_controller.brake()
 
     def evacuations_v4(self, frame):
         '''Follow the exit. If it loses the green, it keeps moving rectifying the trayectory.

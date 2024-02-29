@@ -40,9 +40,10 @@ class RobotController:
 			self.robot.right()
 		
 		### Waits time to make the movement
-		for i in range(0,1500):
+		while True:
 			time.sleep(0.00001)
-
+			i += 1
+			
 			if(i<steps):
 				pass
 			else:

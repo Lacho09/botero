@@ -12,6 +12,7 @@ class LineFollowingController:
         self.prev_error = 0
         self.integral = 0
         self.lf_counter = 0
+        self.lf_total_counter = 0
         self.lf_obstacle_counter = 0
         self.preference = 'right'
         self.bifurcation_counter = 0
@@ -73,18 +74,26 @@ class LineFollowingController:
     def follow_line_evacuations(self):
         lsensor_status, rsensor_status = self.robot_controller.read_obstacle_sensors()
 
-        if lsensor_status != 0 and rsensor_status != 0: ### if no obstacles
+        if self.lf_total_counter < 1000:
+            logging.warning('Line detected. Following it no matter what.')
             self.robot_controller.move_forward()
             self.follow_line()
-            self.lf_counter =+ 1
-            self.lf_obstacle_counter = 0
+            self.lf_total_counter =+ 1
+
         else:
-            if self.lf_obstacle_counter == 1 and self.lf_counter > 50:
-                self.robot_controller.hard_brake(self.maxDC)
-                self.lf_obstacle_counter =+ 1
-                self.lf_counter = 0
+            if lsensor_status != 0 and rsensor_status != 0:
+                self.robot_controller.move_forward()
+                self.follow_line()
+                self.lf_counter =+ 1
+                self.lf_obstacle_counter = 0
+
             else:
-                self.robot_controller.brake()
+                if self.lf_obstacle_counter == 1 and self.lf_counter > 50:
+                    self.robot_controller.hard_brake(self.maxDC)
+                    self.lf_obstacle_counter =+ 1
+                    self.lf_counter = 0
+                else:
+                    self.robot_controller.brake()
 
     def detect_bifurcation(self, position, sensors):
 
