@@ -1,7 +1,7 @@
 import time
 import RPi.GPIO as GPIO
 from AlphaBot2 import AlphaBot2
-from TRSensors_rev21 import TRSensor
+from TRSensors_rev22 import TRSensor
 import logging
 
 # implement TRsensors here for reading sensors
@@ -40,10 +40,10 @@ class RobotController:
 			self.robot.right()
 		
 		### Waits time to make the movement
+		i = 0
 		while True:
 			time.sleep(0.00001)
-			i += 1
-			
+			i  = i + 1
 			if(i<steps):
 				pass
 			else:
@@ -63,6 +63,12 @@ class RobotController:
 			self.rotate('left', 1000*self.green_exploration_counter)
 		else:
 			self.rotate('right', 1000*self.green_exploration_counter)
+
+	def green_finder(self, prev_pos_x):
+		if prev_pos_x < 0.5:
+			self.rotate("left")
+		elif prev_pos_x > 0.5:
+			self.rotate("right")
 
 		
 	def line_follow_sensors_calibration(self):
