@@ -1,5 +1,6 @@
 import settings
 import logging
+import random
 
 class LineFollowingController:
     def __init__(self, robot_controller, line_following_settings):
@@ -42,7 +43,7 @@ class LineFollowingController:
         # print(position)
 
         # Detects any bifurcation and acts consequently
-        position = self.detect_bifurcation(position, sensor_values)
+        position = self.detect_bifurcation_random(position, sensor_values)
 
         # Calculate the error based on sensor values
         error = position - 2000
@@ -74,12 +75,14 @@ class LineFollowingController:
     def follow_line_evacuations(self):
         lsensor_status, rsensor_status = self.robot_controller.read_obstacle_sensors()
 
+        self.lf_total_counter = self.lf_total_counter + 1
+        logging.warning(f'{self.lf_total_counter}')
+        
         if self.lf_total_counter < 1000:
             logging.warning('Line detected. Following it no matter what.')
             self.robot_controller.move_forward()
             self.follow_line()
-            self.lf_total_counter =+ 1
-
+            
         else:
             if lsensor_status != 0 and rsensor_status != 0:
                 self.robot_controller.move_forward()
@@ -97,9 +100,10 @@ class LineFollowingController:
 
     def detect_bifurcation(self, position, sensors):
 
-        if sensors[0] > settings.sensor_threshold and sensors[4] > settings.sensor_threshold:
+        if (sensors[0] > settings.sensor_threshold and sensors[4] > settings.sensor_threshold) and sensors[2] < settings.sensor_threshold:
             logging.info(f'bifurcation {self.preference}')
-            self.bifurcation_counter += 1
+            
+            self.bifurcation_counter = self.bifurcation_counter + 1
 
             if self.bifurcation_counter == 1:
 
@@ -115,6 +119,21 @@ class LineFollowingController:
                 else:
                     position = 1000
             
+        return position
+    
+    def detect_bifurcation_random(self, position, sensors):
+
+        if (sensors[0] > settings.sensor_threshold and sensors[4] > settings.sensor_threshold) and sensors[2] < settings.sensor_threshold:
+            logging.info(f'bifurcation {self.preference}')
+
+            random_float = random.random()
+
+            if random_float >= 0.5:
+                self.preference = 'right'
+                position = 1000
+            else:
+                self.preference = 'left'
+                position = 3000            
         
         return position
 
