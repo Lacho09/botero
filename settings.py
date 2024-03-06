@@ -44,19 +44,18 @@ green_maxDC = 25
 
 # Define the threshold area for contours
 area = 1000
-#############################################################
 
+#############################################################
 ### Line follow
 sensor_threshold = 500
 breaking_time = 0.2
 
-### Green follow
-lower_limit = 0.3
-upper_limit = 0.7
-correction_obstacle = 1
-correction = 1
+### PID values
+line_P = 0.03
+line_I = 0
+line_D = 1
+line_maxDC = 25
 
-maximum = 20
-P = 10
-I = 0
-D = 5
+### Bifurcation imbalance maxDC = 25
+bif_right = 3000
+bif_left = 1000

@@ -109,15 +109,15 @@ class LineFollowingController:
 
                 if self.preference == 'right':
                     self.preference = 'left'
-                    position = 3000
+                    position = settings.bif_right
                 else:
                     self.preference = 'right'
-                    position = 1000
+                    position = settings.bif_left
             else:
                 if self.preference == 'right':
-                    position = 3000
+                    position = settings.bif_right
                 else:
-                    position = 1000
+                    position = settings.bif_left
             
         return position
     
@@ -130,10 +130,10 @@ class LineFollowingController:
 
             if random_float >= 0.5:
                 self.preference = 'right'
-                position = 1000
+                position = settings.bif_right
             else:
                 self.preference = 'left'
-                position = 3000            
+                position = settings.bif_left 
         
         return position
 
