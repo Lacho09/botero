@@ -72,14 +72,14 @@ class LineFollowingController:
 
         self.prev_error = error
 
-    def follow_line_evacuations(self):
+    def follow_line_evacuations(self, green_ever_detected):
         lsensor_status, rsensor_status = self.robot_controller.read_obstacle_sensors()
 
         self.lf_total_counter = self.lf_total_counter + 1
-        logging.warning(f'{self.lf_total_counter}')
+        logging.info(f'{self.lf_total_counter}')
         
-        if self.lf_total_counter < 1000:
-            logging.warning('Line detected. Following it no matter what.')
+        if self.lf_total_counter < settings.lf_ignore_obstacle and green_ever_detected != 0: 
+            logging.info('Line detected. Following it no matter what.')
             self.robot_controller.move_forward()
             self.follow_line()
             
@@ -124,7 +124,7 @@ class LineFollowingController:
     def detect_bifurcation_random(self, position, sensors):
 
         if (sensors[0] > settings.sensor_threshold and sensors[4] > settings.sensor_threshold) and sensors[2] < settings.sensor_threshold:
-            logging.info(f'bifurcation {self.preference}')
+            logging.warning(f'bifurcation {self.preference}')
 
             random_float = random.random()
 
