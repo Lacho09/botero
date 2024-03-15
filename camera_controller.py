@@ -11,6 +11,7 @@ class CameraObjectController:
         # self.camera = camera
         self.stream = picamera.array.PiRGBArray(self.camera)
         self.shutter_speed = settings.shutter_speed
+        self.iso = settings.iso
         self.gain_value = settings.gain_value
         self.gain_value2 = settings.gain_value2
         pass
@@ -21,9 +22,9 @@ class CameraObjectController:
         self.camera.exposure_mode = 'off'
 
         # # Set camera ISO sensitivity (values: 0, 100, 200, 320, 400, 500, 640, 800)
-        self.camera.iso = 1600  # Adjust this value based on lighting conditions
+        self.camera.iso = self.iso  # Adjust this value based on lighting conditions
 
-        self.camera.shutter_speed = 20000 #microsegs
+        self.camera.shutter_speed = self.shutter_speed #microsegs
 
         # # Set camera shutter speed (units: microseconds, e.g., 10000 = 1/10000s)
         # camera.shutter_speed = 0  # Set to 0 to use auto shutter speed

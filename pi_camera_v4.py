@@ -13,11 +13,11 @@ import cv2
 import logging
 
 # Configure the logging module
-logging.basicConfig(filename='bot_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
+logging.basicConfig(filename='bot_log.txt', level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 
 # Create a console handler and set its level
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.WARNING)
 
 # Create a formatter and add it to the console handler
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -32,7 +32,7 @@ logging.info("This message should be displayed in the console.")
 
 # Configuration settings
 robot_config = {
-	"line_following_settings": {"P": 0.03, "I": 0, "D": 1, "maxDC": 25},
+	"line_following_settings": {"P": settings.line_P, "I": settings.line_I, "D": settings.line_D, "maxDC": settings.line_maxDC},
 	"green_following_settings": {"P": settings.green_P, "I": settings.green_I, "D": settings.green_D, "maxDC": settings.green_maxDC}
 }
 
@@ -59,17 +59,17 @@ def main_and_jam_detection_fulltime():
 	try:
 		while True:
 
-			pic_id += 1
-
 			if line_follower.line_detected():
 
 				robot_controller.move_forward()
-				line_follower.follow_line_evacuations()
+				line_follower.follow_line_evacuations(green_follower.green_ever_detected)
 
 				# every time a line is detected this counter is reseted
 				green_follower.green_detection_counter = 0
 
 			if not line_follower.line_detected(): # if there is no line, search for green using the camera
+
+				pic_id += 1
 
 				# Reset the line following total counter
 				line_follower.lf_total_counter = 0

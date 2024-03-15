@@ -1,7 +1,8 @@
 ### Camera settings
 gain_value = 1.16796875
 gain_value2 = 1.90234375
-shutter_speed = 33000 # 1ms
+shutter_speed = 20000 # 1ms
+iso = 1600
 
 ############################################################33
 ### Green detection
@@ -29,6 +30,18 @@ green_I = 0
 green_D = 10
 green_maxDC = 25
 
+# ### PID values
+# green_P = 30 
+# green_I = 0 
+# green_D = 30
+# green_maxDC = 40
+
+### PID values
+# green_P = 30 
+# green_I = 0 
+# green_D = 20
+# green_maxDC = 55
+
 # ########## Plastic 3D-printed rod
 # # Define thresholds for channel 1 based on histogram settings
 # channel1Min = 0.384 * 179 # Scale to HSV range (0 to 179) 
@@ -47,7 +60,7 @@ area = 1000
 
 #############################################################
 ### Line follow
-sensor_threshold = 500
+sensor_threshold = 200
 breaking_time = 0.2
 
 ### PID values
@@ -59,3 +72,6 @@ line_maxDC = 25
 ### Bifurcation imbalance maxDC = 25
 bif_right = 3000
 bif_left = 1000
+
+# Steps after line detection to ignore obstacle detection
+lf_ignore_obstacle = 800
