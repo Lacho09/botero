@@ -17,6 +17,7 @@ class GreenObjectDetectionController:
         self.pos_x = 0.5
         self.prev_pos_x = 0.5
         self.green_detection_counter = 0
+        self.green_ever_detected = 0
         self.gf_counter = 0
         self.gf_obstacle_counter = 0
         self.objective = 0.5
@@ -34,8 +35,11 @@ class GreenObjectDetectionController:
         # cv2.imshow('frame', mask)
         # cv2.waitKey(0)
 
-        # Find the centroid of the biggest green contour
-        self.pos_x = self.centroid_biggest_green_contour(self.green_mask, settings.area)
+        # # Find the centroid of the biggest green contour
+        # self.pos_x = self.centroid_biggest_green_contour(self.green_mask, settings.area)
+
+        # Find the centroid of the green
+        self.pos_x = self.green_centroid(self.green_mask)
 
         # if settings.squared_exit:
         # if self.pos_x != 0.5 and self.pos_x != -1:
@@ -67,6 +71,20 @@ class GreenObjectDetectionController:
             else:
                 return -1
         else:
+            return -1
+        
+    def green_centroid(self, mask):
+        
+        # Calculate moments of the mask
+        M = cv2.moments(self.green_mask)
+
+        try:
+            centroid_x = int(M["m10"] / M["m00"])
+            centroid_prop = centroid_x / mask.shape[1]
+            return centroid_prop
+        
+        except Exception:
+            logging.warning('Problems with green centroid')
             return -1
  
     def region_of_interest(self, mask, frame):
@@ -355,6 +373,7 @@ class GreenObjectDetectionController:
             self.robot_controller.move_forward()
             self.follow_green()
             self.green_detection_counter += 1
+            self.green_ever_detected = 1
 
             # this is to restart the counter used for rotation_exploration
             self.robot_controller.green_exploration_counter = 0
@@ -368,7 +387,7 @@ class GreenObjectDetectionController:
 
                 # TODO: sería interesante preguntarse cuales son las mejores maneras para explorar 
                 # Rotate to find the green
-                self.robot_controller.rotation_exploration()
+                self.robot_controller.rotate('left')
 
             else: # if green was found before helps to decide the rotation sense based on last position it was found
                 logging.info('Green lost')
@@ -405,9 +424,12 @@ class GreenObjectDetectionController:
             self.gf_obstacle_counter = 0
 
         else: # if obstacles
-            if self.pos_x == -1: # and green feature has not been found, then find it
-                logging.warning('Obstacle detected. Forgetting about it and doing rotation exploration')
-                self.robot_controller.rotation_exploration()
+            if self.pos_x == -1: # and green feature is not been seen, then find it
+                # logging.warning('Obstacle detected. Forgetting about it and doing rotation exploration')
+                # self.robot_controller.rotation_exploration()
+
+                logging.info('Obstacle detected. Forgetting about it and doing green finder')
+                self.robot_controller.green_finder(self.prev_pos_x)
 
             else: # if there is green, then stop
 
