@@ -40,9 +40,10 @@ class RobotController:
 			self.robot.right()
 		
 		### Waits time to make the movement
-		for i in range(0,1500):
+		i = 0
+		while True:
 			time.sleep(0.00001)
-
+			i  = i + 1
 			if(i<steps):
 				pass
 			else:
@@ -54,7 +55,7 @@ class RobotController:
 		# Uses the function rotates to explore for the green. The bot will alternatively rotate clockwise and counterclockwise.
 		# the number of steps of every rotation increase to cover more space.
 
-		self.green_exploration_counter =+ 1
+		self.green_exploration_counter = self.green_exploration_counter + 1
 
 		logging.info(f'Rotation explotation, counter = {self.green_exploration_counter}')
 
@@ -62,6 +63,12 @@ class RobotController:
 			self.rotate('left', 1000*self.green_exploration_counter)
 		else:
 			self.rotate('right', 1000*self.green_exploration_counter)
+
+	def green_finder(self, prev_pos_x):
+		if prev_pos_x < 0.5:
+			self.rotate("left")
+		elif prev_pos_x > 0.5:
+			self.rotate("right")
 
 		
 	def line_follow_sensors_calibration(self):
@@ -72,6 +79,7 @@ class RobotController:
 				self.robot.left()
 			self.sensors.calibrate()
 		self.robot.stop()
+		print(self.sensors.readCalibrated())
 
 	def read_linefollow_sensors(self):
 		line_pos, sensor_values = self.sensors.readLine()

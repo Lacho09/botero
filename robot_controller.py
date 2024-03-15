@@ -1,7 +1,7 @@
 import time
 import RPi.GPIO as GPIO
 from AlphaBot2 import AlphaBot2
-from TRSensors_rev22 import TRSensor
+from TRSensors_rev21 import TRSensor
 import logging
 
 # implement TRsensors here for reading sensors
@@ -55,7 +55,7 @@ class RobotController:
 		# Uses the function rotates to explore for the green. The bot will alternatively rotate clockwise and counterclockwise.
 		# the number of steps of every rotation increase to cover more space.
 
-		self.green_exploration_counter =+ 1
+		self.green_exploration_counter = self.green_exploration_counter + 1
 
 		logging.info(f'Rotation explotation, counter = {self.green_exploration_counter}')
 
@@ -79,6 +79,7 @@ class RobotController:
 				self.robot.left()
 			self.sensors.calibrate()
 		self.robot.stop()
+		print(self.sensors.readCalibrated())
 
 	def read_linefollow_sensors(self):
 		line_pos, sensor_values = self.sensors.readLine()
