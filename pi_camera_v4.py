@@ -77,25 +77,26 @@ def main_and_jam_detection_fulltime():
 				# Capture image
 				camera_controller.camera.capture(camera_controller.stream, format='bgr', use_video_port=True)
 
-				# save the picture taken for possible analysis
+				# # save the picture taken for possible analysis
 				# camera_controller.save_image(pic_id)
 
 				frame = camera_controller.stream
 				
 				# Crop the upper portion of the frame (adjust the values to your desired crop size)
 				# TODO: check later, because is not used and could be useful to compare just the green part in images
-				# althoug if the is a jam and bots are not pointing to the green it might not be solved
+				# althoug if the is a jam and bots are not pointing to the green it might not be solved 
 				cropped_frame = frame.array[settings.crop_pos:, :]
 
 				# Follow exit using the image
 				green_follower.evacuations_v3(cropped_frame)
 				
 				# TODO: think about this conditional, is it really necessary ???
-				# If the bot has detected green after leaving the line
-				if green_follower.green_detection_counter > 1:
+				# If the bot has detected green after leaving the line 
+				if green_follower.green_detection_counter > 1 and green_follower.green_recently_detected == 1:
 
 					# look for jams and react to them
-					green_follower.break_jam(prev_frame, prev_mask, cropped_frame)
+					# green_follower.break_jam(prev_frame, prev_mask, cropped_frame)
+					green_follower.break_jam_new(prev_frame, cropped_frame)
 
 				prev_frame = cropped_frame
 				prev_mask = green_follower.green_mask

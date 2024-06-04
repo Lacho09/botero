@@ -17,6 +17,8 @@ class LineFollowingController:
         self.lf_obstacle_counter = 0
         self.preference = 'right'
         self.bifurcation_counter = 0
+        self.bifurcation_flag = 1
+        self.random_float = 0
 
     def line_detected(self):
         
@@ -30,7 +32,6 @@ class LineFollowingController:
             if value > self.sensor_threshold:
                 return True  # Line detected
 
-        self.bifurcation_counter = 0
         return False  # No line detected
 
     def follow_line(self):
@@ -121,7 +122,7 @@ class LineFollowingController:
             
         return position
     
-    def detect_bifurcation_random(self, position, sensors):
+    def detect_bifurcation_random_old(self, position, sensors):
 
         if (sensors[0] > settings.sensor_threshold and sensors[4] > settings.sensor_threshold) and sensors[2] < settings.sensor_threshold:
             logging.warning(f'bifurcation {self.preference}')
@@ -134,9 +135,72 @@ class LineFollowingController:
             else:
                 self.preference = 'left'
                 position = settings.bif_left 
-        
+            
+        return position
+            
+    def detect_bifurcation_random_old2(self, position, sensors):
+
+        if (sensors[0] > settings.sensor_threshold and sensors[4] > settings.sensor_threshold) and sensors[2] < settings.sensor_threshold:
+
+            self.bifurcation_counter = self.bifurcation_counter + 1
+
+            if self.bifurcation_counter == 5:
+
+                random_float = random.random()
+
+                if random_float >= 0.5:
+                    self.preference = 'right'
+                    position = settings.bif_right
+                else:
+                    self.preference = 'left'
+                    position = settings.bif_left
+                    
+                logging.warning(f'bifurcation {self.preference}')
+        else:
+            # print('no bifurcation')
+            self.bifurcation_counter = 0
+
+        # print(position)
+                
         return position
 
-        
+    def detect_bifurcation_random(self, position, sensors):
+        """
+        Detects a potential bifurcation based on sensor readings and randomly chooses a direction to proceed.
+        Asummes that the bifurcation is detected continuously until it is not detected anymore.
+        It won't work if bifurcation and no bifurcations are detected.  
+
+        Args:
+            position (int): Current position of the line.
+            sensors (list): List of sensor readings.
+
+        Returns:
+            int: Updated position after potentially navigating the bifurcation.
+        """
+
+        if (sensors[0] > settings.sensor_threshold and sensors[4] > settings.sensor_threshold) and sensors[2] < settings.sensor_threshold:
+
+            if self.bifurcation_flag == 1:
+
+                self.random_float = random.random()
+
+                if self.random_float >= 0.5:
+                    self.preference = 'right'
+                else:
+                    self.preference = 'left'
+
+                logging.warning(f'bifurcation {self.preference}')
+                self.bifurcation_flag = 0
+
+            if self.preference == 'right':
+                position = position + 1500
+            elif self.preference == 'left':
+                position = position - 1500
+
+        else:
+            # logging.warning(f'no bifurcation, flag goes to 1')
+            self.bifurcation_flag = 1
+                   
+        return position
         
 

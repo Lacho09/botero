@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import time
 import settings  # Import relevant settings for green object detection
 import logging
 
@@ -18,11 +17,34 @@ class GreenObjectDetectionController:
         self.prev_pos_x = 0.5
         self.green_detection_counter = 0
         self.green_ever_detected = 0
+        self.green_recently_detected = 0
         self.gf_counter = 0
         self.gf_obstacle_counter = 0
         self.objective = 0.5
 
     def detect_green_object(self, frame):
+
+        # Define thresholds for the green color in RGB
+        lower_green = np.array([settings.RGBchannel1Min, settings.RGBchannel2Min, settings.RGBchannel3Min])
+        upper_green = np.array([settings.RGBchannel1Max, settings.RGBchannel2Max, settings.RGBchannel3Max])
+
+        # Create a mask for the green color
+        self.green_mask = cv2.inRange(frame, lower_green, upper_green)
+        # cv2.imshow('frame', mask)
+        # cv2.waitKey(0)
+
+        # # Find the centroid of the biggest green contour
+        # self.pos_x = self.centroid_biggest_green_contour(self.green_mask, settings.area)
+
+        # # Find the centroid of the green
+        self.pos_x = self.green_centroid(self.green_mask, frame)
+
+        # if settings.squared_exit:
+        # if self.pos_x != 0.5 and self.pos_x != -1:
+            # print('self.pos_x != 0.5 and self.pos_x != -1')
+        # return mask
+
+    def detect_green_object_hsv(self, frame):
         # Convert the frame from BGR to HSV color space
         hsv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -38,8 +60,8 @@ class GreenObjectDetectionController:
         # # Find the centroid of the biggest green contour
         # self.pos_x = self.centroid_biggest_green_contour(self.green_mask, settings.area)
 
-        # Find the centroid of the green
-        self.pos_x = self.green_centroid(self.green_mask)
+        # # Find the centroid of the green
+        self.pos_x = self.green_centroid(self.green_mask, frame)
 
         # if settings.squared_exit:
         # if self.pos_x != 0.5 and self.pos_x != -1:
@@ -73,18 +95,44 @@ class GreenObjectDetectionController:
         else:
             return -1
         
-    def green_centroid(self, mask):
-        
-        # Calculate moments of the mask
-        M = cv2.moments(self.green_mask)
+    def green_centroid(self, mask, frame):
+        """
+        Calculates the centroid of green pixels within the provided mask image.
 
-        try:
-            centroid_x = int(M["m10"] / M["m00"])
-            centroid_prop = centroid_x / mask.shape[1]
-            return centroid_prop
+        Args:
+            mask (numpy.ndarray): An image mask indicating regions of interest.
+            frame (numpy.ndarray): The original frame/image.
+
+        Returns:
+            float: Normalized centroid position relative to the width of the mask.
+            Returns -1 if centroid calculation fails or green pixels are insufficient.
+        """
         
-        except Exception:
-            logging.warning('Problems with green centroid')
+        white_pixel_count = cv2.countNonZero(mask)
+
+        if white_pixel_count >= settings.pixel_count_threshold:
+            
+            # Calculate moments of the mask
+            M = cv2.moments(mask)
+
+            try:
+                centroid_x = int(M["m10"] / M["m00"])
+                centroid_prop = centroid_x / mask.shape[1]
+                self.green_recently_detected = 1
+                return centroid_prop
+            
+            except Exception:
+                self.green_recently_detected = 0
+                logging.warning('Problems with green centroid')
+                return -1
+        else:
+            self.green_recently_detected = 0
+
+            # Save the image
+            output_path = "/home/pi/W/pi_cam/pi_cam_upgraded/under_threshold"+".jpg"  # Replace with the desired output path
+            cv2.imwrite(output_path, frame)
+
+            logging.warning('Green pixels are not enough to consider them as the exit')
             return -1
  
     def region_of_interest(self, mask, frame):
@@ -157,6 +205,57 @@ class GreenObjectDetectionController:
                 pass
         counter += 1
 
+    def calculate_quadratic_difference(self, image1, image2):
+        """
+        Computes the sum of squared differences between the green channel of two images.
+
+        Args:
+            image1 (numpy.ndarray): The first input image.
+            image2 (numpy.ndarray): The second input image.
+
+        Returns:
+            int: The sum of squared differences between the green channels of the input images.
+        """
+
+        # # Ensure images have the same dimensions
+        # if image1.shape != image2.shape:
+        #     raise ValueError("Images must have the same dimensions")
+        
+        green_image1 = image1[:,:,1]
+        green_image2 = image2[:,:,1]
+
+        # Compute absolute difference
+        diff = cv2.absdiff(green_image1, green_image2)
+
+        # Compute the sum of elements raised to the power of 2
+        sum_squared = np.sum(diff**2)
+
+        return sum_squared
+
+    def calculate_difference_in_pixels(self, image1, image2):
+        """
+        Calculates the number of different pixels between two images.
+
+        Args:
+            self: Reference to the object instance.
+            image1 (numpy.ndarray): The first input image.
+            image2 (numpy.ndarray): The second input image.
+
+        Returns:
+            int: The number of different pixels between the two images.
+        """
+
+        # # Ensure images have the same dimensions
+        # if image1.shape != image2.shape:
+        #     raise ValueError("Images must have the same dimensions")
+
+        diff = cv2.absdiff(image1, image2)
+
+        # Count non-zero pixels in the green channel of the difference image
+        different_pixels = cv2.countNonZero(diff[:,:,1])
+
+        return different_pixels
+
     def calculate_displacement(self, image1, prev_mask, image2):
         '''This code assumes that the displacement is relatively small between the two images. 
         If the displacement is large or involves rotation, more advanced techniques like image registration or 
@@ -218,11 +317,10 @@ class GreenObjectDetectionController:
 
         area = self.calculate_displacement(image1, prev_mask, image2)
                 
-        if area < 2000: # This value has been obtained empirically
+        if area < 1000: # This value has been obtained empirically
 
-            logging.info(f'Jam detected! - {area}')
+            logging.warning(f'Jam detected! - {area}')
 
-            # The solution of the jam appears to be related to the backward and forward movement.
             # This command makes the bot move backward, but if there is no line in the next iteration AND
             # there are no obstacles, the bot will start moving forward and repeat the cycle.
             self.robot_controller.move_backward()
@@ -233,6 +331,37 @@ class GreenObjectDetectionController:
 
         else:
             logging.info(f'No jam detected - {area}')
+            pass
+
+    def break_jam_new(self, image1, image2):
+        """
+        Checks for a potential jam based on the difference between two consecutive images.
+
+        Args:
+            image1 (numpy.ndarray): The first input image.
+            image2 (numpy.ndarray): The second input image.
+
+        Returns:
+            None
+        """
+
+        # thres = self.calculate_difference_in_pixels(image1, image2)
+        diff = self.calculate_quadratic_difference(image1, image2)
+  
+        if diff < settings.diff_thres: # This value has been obtained empirically
+
+            logging.warning(f'Jam detected! - {diff}')
+
+            # This command makes the bot move backward, but if there is no line in the next iteration AND
+            # there are no obstacles, the bot will start moving forward and repeat the cycle.
+            self.robot_controller.move_backward()
+
+            # This is another way to try to brake the jam
+            # self.robot_controller.line_follow_sensors_calibration()
+            pass
+
+        else:
+            logging.warning(f'No jam detected - {diff}')
             pass
 
     def follow_green(self, objective = 0.5):
@@ -358,6 +487,51 @@ class GreenObjectDetectionController:
                 elif self.prev_pos_x > 0.5:
                     self.robot_controller.rotate("right")
     
+    def evacuations_v2_old(self, frame):
+        '''
+        Follows the exit.
+        Controls two main situations when the green is not found in the current frame
+            - and has never been found -> rotates searching for it
+            - and was found before -> rotates in the proper sense based on the previous green detection
+        '''
+
+        self.detect_green_object(frame)
+
+        if self.pos_x != -1:    # green feature has been found
+            self.prev_pos_x = self.pos_x
+            self.robot_controller.move_forward()
+            self.follow_green()
+            self.green_detection_counter += 1
+            self.green_ever_detected = 1
+
+            # this is to restart the counter used for rotation_exploration
+            self.robot_controller.green_exploration_counter = 0
+
+        else: # no green found
+                # if green never has been found or the green exploration is on the go
+                if self.green_detection_counter == 0 or self.robot_controller.green_exploration_counter != 0: 
+
+                    logging.warning('Green never detected. Doing rotation exploration')
+
+                    # self.robot_controller.stop()
+
+                    # TODO: sería interesante preguntarse cuales son las mejores maneras para explorar
+                    
+                    # Rotate to find the green
+                    self.robot_controller.rotate('left')
+
+                else: # if green was found before helps to decide the rotation sense based on last position it was found
+                    logging.info('Green lost')
+                    
+                    if self.prev_pos_x < 0.5:
+                        # self.follow_green()       # in v1 works
+                        self.follow_green(0.5)
+                    
+                    elif self.prev_pos_x > 0.5:
+                        # self.pos_x = 2            # in v1 works
+                        # self.follow_green()       # in v1 works
+                        self.follow_green(-2.5)
+    
     def evacuations_v2(self, frame):
         '''
         Follows the exit.
@@ -380,26 +554,35 @@ class GreenObjectDetectionController:
 
         else: # no green found
             
-            if self.green_detection_counter == 0 or self.robot_controller.green_exploration_counter != 0: # if green never has been found or the green exploration is on the go
-                logging.warning('Green never detected. Doing rotation exploration')
-
-                # self.robot_controller.stop()
-
-                # TODO: sería interesante preguntarse cuales son las mejores maneras para explorar 
-                # Rotate to find the green
-                self.robot_controller.rotate('left')
-
-            else: # if green was found before helps to decide the rotation sense based on last position it was found
-                logging.info('Green lost')
-                
+            if self.gf_counter % 5 == 0:
+                self.robot_controller.move_backward()
+            else:
                 if self.prev_pos_x < 0.5:
                     # self.follow_green()       # in v1 works
-                    self.follow_green(0.5)
+                    # self.follow_green(0.5)
+                    self.robot_controller.rotate('left')
                 
                 elif self.prev_pos_x > 0.5:
                     # self.pos_x = 2            # in v1 works
                     # self.follow_green()       # in v1 works
-                    self.follow_green(-2.5)
+                    # self.follow_green(-2.5)
+                    self.robot_controller.rotate('right')
+                
+                else: #TODO: randomize
+                    self.robot_controller.rotate('left')
+                
+            
+            # if self.green_detection_counter == 0 or self.robot_controller.green_exploration_counter != 0: # if green never has been found or the green exploration is on the go
+            #     logging.warning('Green never detected. Doing rotation exploration')
+
+            #     # self.robot_controller.stop()
+
+            #     # TODO: sería interesante preguntarse cuales son las mejores maneras para explorar 
+            #     # Rotate to find the green
+            #     self.robot_controller.rotate('left')
+
+            # else: # if green was found before helps to decide the rotation sense based on last position it was found
+           
 
 # TODO: se podría hacer un caso en que se considere continuar avanzando cuando sea solo un sensor el que detecta obstaculo.
                     
